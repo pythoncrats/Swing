@@ -1,5 +1,0 @@
-Swing is designed to connect unemployed youth to skilled trainers who can provide practical training of different fields and allowing youth to access job advertisments, enabling the unemployed youth better their living standards by acquring skills that will enable them be potential individuals for assigned jobs since they will have acquired the skills needed by the different organisations.
-Changing something 
-kocho max
-
-Bishogo sedra
