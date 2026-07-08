@@ -1,9 +1,10 @@
-const User = require('../models/User');
-const Notification = require('../models/Notification');
+const { pool } = require('../config/db');
+const { findUserById, updateUserFields, toSafeUser } = require('../models/User');
+const { createNotification, getNotificationsForUser } = require('../models/Notification');
 
 // @route GET /api/trainer/profile
 exports.getProfile = async (req, res) => {
-  res.json({ profile: req.user.toSafeObject() });
+  res.json({ profile: toSafeUser(req.user) });
 };
 
 // @route PUT /api/trainer/profile
@@ -12,20 +13,19 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, phone, location, bio, trainerSkills, educationStatus } = req.body;
-    const user = await User.findById(req.user._id);
-
-    if (name) user.name = name;
-    if (phone !== undefined) user.phone = phone;
-    if (location !== undefined) user.location = location;
-    if (bio !== undefined) user.bio = bio;
-    if (educationStatus !== undefined) user.educationStatus = educationStatus;
+    const fields = {};
+    if (name) fields.name = name;
+    if (phone !== undefined) fields.phone = phone;
+    if (location !== undefined) fields.location = location;
+    if (bio !== undefined) fields.bio = bio;
+    if (educationStatus !== undefined) fields.education_status = educationStatus;
     if (trainerSkills !== undefined) {
-      user.trainerSkills =
-        typeof trainerSkills === 'string' ? JSON.parse(trainerSkills) : trainerSkills;
+      const skillsArr = typeof trainerSkills === 'string' ? JSON.parse(trainerSkills) : trainerSkills;
+      fields.trainer_skills = JSON.stringify(skillsArr);
     }
 
-    await user.save();
-    res.json({ message: 'Profile updated', profile: user.toSafeObject() });
+    const updated = await updateUserFields(req.user.id, fields);
+    res.json({ message: 'Profile updated', profile: toSafeUser(updated) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update profile', error: err.message });
   }
@@ -35,47 +35,50 @@ exports.updateProfile = async (req, res) => {
 // @desc  List of trainees assigned to this trainer by the admin
 exports.getAssignedTrainees = async (req, res) => {
   try {
-    const trainees = await User.find({
-      role: 'trainee',
-      assignedTrainer: req.user._id
-    }).select('-password');
-    res.json({ trainees });
+    const [rows] = await pool.query(
+      `SELECT id, name, email, phone, location, training_status, registration_status, created_at
+       FROM users WHERE role = 'trainee' AND assigned_trainer_id = ?
+       ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ trainees: rows });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch trainees', error: err.message });
   }
 };
 
 // @route GET /api/trainer/trainees/certified
-// @desc  List of certified trainees who finished training under this trainer
 exports.getCertifiedTrainees = async (req, res) => {
   try {
-    const trainees = await User.find({
-      role: 'trainee',
-      assignedTrainer: req.user._id,
-      trainingStatus: 'certified'
-    }).select('-password');
-    res.json({ trainees });
+    const [rows] = await pool.query(
+      `SELECT id, name, email, phone, location, training_status
+       FROM users
+       WHERE role = 'trainee' AND assigned_trainer_id = ? AND training_status = 'certified'
+       ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ trainees: rows });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch certified trainees', error: err.message });
   }
 };
 
+const findAssignedTrainee = async (trainerId, traineeId) => {
+  const [rows] = await pool.query(
+    `SELECT * FROM users WHERE id = ? AND role = 'trainee' AND assigned_trainer_id = ? LIMIT 1`,
+    [traineeId, trainerId]
+  );
+  return rows[0] || null;
+};
+
 // @route PUT /api/trainer/trainees/:id/progress
-// @desc  Mark a trainee's training as in_progress
 exports.markInProgress = async (req, res) => {
   try {
-    const trainee = await User.findOne({
-      _id: req.params.id,
-      role: 'trainee',
-      assignedTrainer: req.user._id
-    });
-
+    const trainee = await findAssignedTrainee(req.user.id, req.params.id);
     if (!trainee) return res.status(404).json({ message: 'Trainee not found under your supervision' });
 
-    trainee.trainingStatus = 'in_progress';
-    await trainee.save();
-
-    res.json({ message: 'Trainee marked as in progress', trainee: trainee.toSafeObject() });
+    const updated = await updateUserFields(trainee.id, { training_status: 'in_progress' });
+    res.json({ message: 'Trainee marked as in progress', trainee: toSafeUser(updated) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to update trainee', error: err.message });
   }
@@ -85,34 +88,27 @@ exports.markInProgress = async (req, res) => {
 // @desc  Only the trainer can certify a trainee (verifies completion of training)
 exports.certifyTrainee = async (req, res) => {
   try {
-    const trainee = await User.findOne({
-      _id: req.params.id,
-      role: 'trainee',
-      assignedTrainer: req.user._id
-    });
-
+    const trainee = await findAssignedTrainee(req.user.id, req.params.id);
     if (!trainee) return res.status(404).json({ message: 'Trainee not found under your supervision' });
 
-    trainee.trainingStatus = 'certified';
-    await trainee.save();
+    const updated = await updateUserFields(trainee.id, { training_status: 'certified' });
 
-    await Notification.create({
-      user: trainee._id,
+    await createNotification({
+      userId: trainee.id,
       type: 'certified',
       message: `Congratulations! You have been certified by your trainer ${req.user.name}.`
     });
 
-    res.json({ message: 'Trainee certified', trainee: trainee.toSafeObject() });
+    res.json({ message: 'Trainee certified', trainee: toSafeUser(updated) });
   } catch (err) {
     res.status(500).json({ message: 'Failed to certify trainee', error: err.message });
   }
 };
 
 // @route GET /api/trainer/notifications
-// @desc  Trainer receives notifications when a new trainee is assigned by admin
 exports.getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const notifications = await getNotificationsForUser(req.user.id);
     res.json({ notifications });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch notifications', error: err.message });

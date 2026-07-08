@@ -1,5 +1,11 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const {
+  createUser,
+  findUserByEmail,
+  updateUserFields,
+  matchPassword,
+  toSafeUser
+} = require('../models/User');
 const generateOtp = require('../utils/generateOtp');
 const sendEmail = require('../utils/sendEmail');
 
@@ -8,12 +14,14 @@ const OTP_MAX_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS) || 3;
 const OTP_LOCK_MINUTES = Number(process.env.OTP_LOCK_MINUTES) || 5;
 
 const signToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+  jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 
 const otpEmailBody = (code) =>
   `Your Swing verification code is ${code}. It expires in ${OTP_EXPIRES_MINUTES} minutes.`;
+
+const addMinutes = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 
 // @route POST /api/auth/register
 // @desc  Register a trainee or trainer, then send an OTP for verification.
@@ -30,24 +38,23 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'role must be either "trainee" or "trainer"' });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const existing = await findUserByEmail(email);
     if (existing) {
       return res.status(409).json({ message: 'An account with this email already exists' });
     }
 
     const otpCode = generateOtp();
-    const otpExpires = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
+    const otpExpires = addMinutes(OTP_EXPIRES_MINUTES);
 
-    const user = await User.create({
+    const user = await createUser({
+      role,
       name,
-      email: email.toLowerCase(),
+      email,
       password,
       phone,
       location,
-      role,
       otpCode,
-      otpExpires,
-      otpAttempts: 0
+      otpExpires
     });
 
     await sendEmail({
@@ -58,7 +65,7 @@ exports.register = async (req, res) => {
 
     res.status(201).json({
       message: 'Registration successful. An OTP has been sent to your email for verification.',
-      userId: user._id,
+      userId: user.id,
       email: user.email
     });
   } catch (err) {
@@ -76,16 +83,15 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'email and otp are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      '+otpCode +otpExpires +otpAttempts +otpLockUntil'
-    );
-
+    const user = await findUserByEmail(email);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.isVerified) return res.status(400).json({ message: 'Account is already verified' });
+    if (user.is_verified) return res.status(400).json({ message: 'Account is already verified' });
+
+    const now = new Date();
 
     // Check lockout
-    if (user.otpLockUntil && user.otpLockUntil > new Date()) {
-      const secondsLeft = Math.ceil((user.otpLockUntil - new Date()) / 1000);
+    if (user.otp_lock_until && new Date(user.otp_lock_until) > now) {
+      const secondsLeft = Math.ceil((new Date(user.otp_lock_until) - now) / 1000);
       return res.status(429).json({
         message: `Too many failed attempts. Please wait ${Math.ceil(
           secondsLeft / 60
@@ -93,49 +99,51 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // If lock period has passed, attempts were already usable again
-    if (user.otpLockUntil && user.otpLockUntil <= new Date()) {
-      user.otpAttempts = 0;
-      user.otpLockUntil = undefined;
+    // If lock period has passed, reset attempts
+    if (user.otp_lock_until && new Date(user.otp_lock_until) <= now) {
+      await updateUserFields(user.id, { otp_attempts: 0, otp_lock_until: null });
+      user.otp_attempts = 0;
     }
 
-    if (!user.otpCode || !user.otpExpires || user.otpExpires < new Date()) {
+    if (!user.otp_code || !user.otp_expires || new Date(user.otp_expires) < now) {
       return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
     }
 
-    if (user.otpCode !== otp) {
-      user.otpAttempts += 1;
+    if (user.otp_code !== otp) {
+      const attempts = user.otp_attempts + 1;
 
-      if (user.otpAttempts >= OTP_MAX_ATTEMPTS) {
-        user.otpLockUntil = new Date(Date.now() + OTP_LOCK_MINUTES * 60 * 1000);
-        user.otpAttempts = 0;
-        user.otpCode = undefined;
-        user.otpExpires = undefined;
-        await user.save();
+      if (attempts >= OTP_MAX_ATTEMPTS) {
+        await updateUserFields(user.id, {
+          otp_attempts: 0,
+          otp_lock_until: addMinutes(OTP_LOCK_MINUTES),
+          otp_code: null,
+          otp_expires: null
+        });
         return res.status(429).json({
           message: `Incorrect OTP entered ${OTP_MAX_ATTEMPTS} times. Please wait ${OTP_LOCK_MINUTES} minutes, then register again to receive a new code.`
         });
       }
 
-      await user.save();
+      await updateUserFields(user.id, { otp_attempts: attempts });
       return res.status(400).json({
-        message: `Incorrect OTP. ${OTP_MAX_ATTEMPTS - user.otpAttempts} attempt(s) remaining.`
+        message: `Incorrect OTP. ${OTP_MAX_ATTEMPTS - attempts} attempt(s) remaining.`
       });
     }
 
     // Success
-    user.isVerified = true;
-    user.otpCode = undefined;
-    user.otpExpires = undefined;
-    user.otpAttempts = 0;
-    user.otpLockUntil = undefined;
-    await user.save();
+    const verifiedUser = await updateUserFields(user.id, {
+      is_verified: true,
+      otp_code: null,
+      otp_expires: null,
+      otp_attempts: 0,
+      otp_lock_until: null
+    });
 
-    const token = signToken(user);
+    const token = signToken(verifiedUser);
     res.json({
       message: 'Account verified successfully',
       token,
-      user: user.toSafeObject()
+      user: toSafeUser(verifiedUser)
     });
   } catch (err) {
     res.status(500).json({ message: 'OTP verification failed', error: err.message });
@@ -148,25 +156,25 @@ exports.resendOtp = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'email is required' });
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      '+otpLockUntil +otpAttempts'
-    );
+    const user = await findUserByEmail(email);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.isVerified) return res.status(400).json({ message: 'Account is already verified' });
+    if (user.is_verified) return res.status(400).json({ message: 'Account is already verified' });
 
-    if (user.otpLockUntil && user.otpLockUntil > new Date()) {
-      const secondsLeft = Math.ceil((user.otpLockUntil - new Date()) / 1000);
+    const now = new Date();
+    if (user.otp_lock_until && new Date(user.otp_lock_until) > now) {
+      const secondsLeft = Math.ceil((new Date(user.otp_lock_until) - now) / 1000);
       return res.status(429).json({
         message: `Please wait ${Math.ceil(secondsLeft / 60)} minute(s) before requesting a new OTP.`
       });
     }
 
     const otpCode = generateOtp();
-    user.otpCode = otpCode;
-    user.otpExpires = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
-    user.otpAttempts = 0;
-    user.otpLockUntil = undefined;
-    await user.save();
+    await updateUserFields(user.id, {
+      otp_code: otpCode,
+      otp_expires: addMinutes(OTP_EXPIRES_MINUTES),
+      otp_attempts: 0,
+      otp_lock_until: null
+    });
 
     await sendEmail({
       to: user.email,
@@ -191,12 +199,12 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    const user = await findUserByEmail(email);
+    if (!user || !(await matchPassword(password, user.password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    if (!user.isVerified) {
+    if (!user.is_verified) {
       return res.status(403).json({
         message: 'Account not verified. Please verify your email with the OTP sent to you.'
       });
@@ -206,7 +214,7 @@ exports.login = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      user: user.toSafeObject()
+      user: toSafeUser(user)
     });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
@@ -215,5 +223,5 @@ exports.login = async (req, res) => {
 
 // @route GET /api/auth/me
 exports.getMe = async (req, res) => {
-  res.json({ user: req.user.toSafeObject() });
+  res.json({ user: toSafeUser(req.user) });
 };
