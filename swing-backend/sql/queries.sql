@@ -11,9 +11,7 @@ USE swing;
 -- ---------- Users ----------
 
 -- All pending trainee registrations
-SELECT id, name, email, phone, location, created_at
-FROM users
-WHERE role = 'trainee' AND registration_status = 'pending';
+SELECT id, name, email, phone, location, created_at FROM users WHERE role = 'trainee' AND registration_status = 'pending';
 
 -- All trainees assigned to trainers, with trainer name
 SELECT u.id, u.name AS trainee_name, u.email, t.name AS trainer_name
