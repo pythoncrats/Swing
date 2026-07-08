@@ -1,0 +1,5 @@
+node_modules/
+.env
+uploads/skills/*
+!uploads/skills/.gitkeep
+npm-debug.log
