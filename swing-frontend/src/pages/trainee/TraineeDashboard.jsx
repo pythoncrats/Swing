@@ -3,7 +3,12 @@ import { useForm } from "react-hook-form";
 import { LayoutDashboard, User, Sparkles, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import AppShell from "../../components/layout/AppShell";
-import { Card, SectionHeading, StatusBadge, EmptyState } from "../../components/ui/Surfaces";
+import {
+  Card,
+  SectionHeading,
+  StatusBadge,
+  EmptyState,
+} from "../../components/ui/Surfaces";
 import { Field, TextInput, Textarea } from "../../components/ui/Field";
 import Button from "../../components/ui/Button";
 import SwingArc from "../../components/ui/SwingArc";
@@ -64,10 +69,16 @@ export default function TraineeDashboard() {
     await api.updateTraineeSkills(user.id, {
       hasSkills: skillsState.hasSkills,
       skillsHave: skillsState.hasSkills
-        ? skillsState.skillsHave.split(",").map((s) => s.trim()).filter(Boolean)
+        ? skillsState.skillsHave
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [],
       skillsWanted: !skillsState.hasSkills
-        ? skillsState.skillsWanted.split(",").map((s) => s.trim()).filter(Boolean)
+        ? skillsState.skillsWanted
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [],
       documents: skillsState.documentName ? [skillsState.documentName] : [],
     });
@@ -104,7 +115,9 @@ export default function TraineeDashboard() {
         {/* Progress */}
         <Card className="lg:col-span-3">
           <div className="mb-1 flex items-center justify-between">
-            <p className="font-display text-sm font-semibold text-ink-900">Your training journey</p>
+            <p className="font-display text-sm font-semibold text-ink-900">
+              Your training journey
+            </p>
             <StatusBadge status={user.status} />
           </div>
           {user.status === "rejected" ? (
@@ -119,12 +132,16 @@ export default function TraineeDashboard() {
             </div>
           ) : (
             <div className="mt-5">
-              <SwingArc status={user.status} applied={jobs.some((j) => j.applied)} />
+              <SwingArc
+                status={user.status}
+                applied={jobs.some((j) => j.applied)}
+              />
             </div>
           )}
           {user.status === "pending" && (
             <p className="mt-4 text-sm text-ink-500">
-              Your registration is with an administrator for review. You'll be assigned a trainer soon.
+              Your registration is with an administrator for review. You'll be
+              assigned a trainer soon.
             </p>
           )}
         </Card>
@@ -133,24 +150,44 @@ export default function TraineeDashboard() {
         <Card className="lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <User size={16} className="text-navy-700" />
-            <p className="font-display text-sm font-semibold text-ink-900">Profile</p>
+            <p className="font-display text-sm font-semibold text-ink-900">
+              Profile
+            </p>
           </div>
-          <form onSubmit={handleProfileSubmit(onProfileSave)} className="space-y-4">
+          <form
+            onSubmit={handleProfileSubmit(onProfileSave)}
+            className="space-y-4"
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name" error={profileErrors.name?.message}>
-                <TextInput {...registerProfile("name", { required: "Required" })} />
+                <TextInput
+                  {...registerProfile("name", { required: "Required" })}
+                />
               </Field>
               <Field label="Email address" error={profileErrors.email?.message}>
-                <TextInput type="email" {...registerProfile("email", { required: "Required" })} />
+                <TextInput
+                  type="email"
+                  {...registerProfile("email", { required: "Required" })}
+                />
               </Field>
               <Field label="Phone number" error={profileErrors.phone?.message}>
-                <TextInput {...registerProfile("phone", { required: "Required" })} />
+                <TextInput
+                  {...registerProfile("phone", { required: "Required" })}
+                />
               </Field>
               <Field label="Location">
-                <TextInput placeholder="e.g. Mukono, Uganda" {...registerProfile("location")} />
+                <TextInput
+                  placeholder="e.g. Mukono, Uganda"
+                  {...registerProfile("location")}
+                />
               </Field>
             </div>
-            <Button type="submit" size="sm" loading={saving} disabled={!profileDirty}>
+            <Button
+              type="submit"
+              size="sm"
+              loading={saving}
+              disabled={!profileDirty}
+            >
               Save profile
             </Button>
           </form>
@@ -160,7 +197,9 @@ export default function TraineeDashboard() {
         <Card>
           <div className="mb-4 flex items-center gap-2">
             <Sparkles size={16} className="text-navy-700" />
-            <p className="font-display text-sm font-semibold text-ink-900">At a glance</p>
+            <p className="font-display text-sm font-semibold text-ink-900">
+              At a glance
+            </p>
           </div>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
@@ -171,11 +210,15 @@ export default function TraineeDashboard() {
             </div>
             <div className="flex justify-between">
               <dt className="text-ink-500">Trainer assigned</dt>
-              <dd className="font-medium text-ink-900">{user.assignedTrainerId ? "Yes" : "Not yet"}</dd>
+              <dd className="font-medium text-ink-900">
+                {user.assignedTrainerId ? "Yes" : "Not yet"}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-ink-500">Recommended jobs</dt>
-              <dd className="font-mono font-medium text-navy-900">{jobs.length}</dd>
+              <dd className="font-mono font-medium text-navy-900">
+                {jobs.length}
+              </dd>
             </div>
           </dl>
         </Card>
@@ -184,7 +227,9 @@ export default function TraineeDashboard() {
         <Card className="lg:col-span-3">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles size={16} className="text-navy-700" />
-            <p className="font-display text-sm font-semibold text-ink-900">Skills</p>
+            <p className="font-display text-sm font-semibold text-ink-900">
+              Skills
+            </p>
           </div>
 
           <div className="mb-4 flex gap-3">
@@ -195,7 +240,9 @@ export default function TraineeDashboard() {
               <button
                 key={String(opt.v)}
                 type="button"
-                onClick={() => setSkillsState((s) => ({ ...s, hasSkills: opt.v }))}
+                onClick={() =>
+                  setSkillsState((s) => ({ ...s, hasSkills: opt.v }))
+                }
                 className={`rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors ${
                   skillsState.hasSkills === opt.v
                     ? "border-navy-900 bg-navy-900 text-paper-50"
@@ -209,39 +256,69 @@ export default function TraineeDashboard() {
 
           {skillsState.hasSkills ? (
             <div className="space-y-4">
-              <Field label="Skills you have" hint="Separate multiple skills with commas.">
+              <Field
+                label="Skills you have"
+                hint="Separate multiple skills with commas."
+              >
                 <Textarea
                   rows={2}
                   placeholder="e.g. Basic HTML, Basic CSS, Customer service"
                   value={skillsState.skillsHave}
-                  onChange={(e) => setSkillsState((s) => ({ ...s, skillsHave: e.target.value }))}
+                  onChange={(e) =>
+                    setSkillsState((s) => ({
+                      ...s,
+                      skillsHave: e.target.value,
+                    }))
+                  }
                 />
               </Field>
-              <Field label="Attach supporting document" hint="e.g. a certificate or ID scan (file name only in this demo).">
+              <Field
+                label="Attach supporting document"
+                hint="e.g. a certificate or ID scan (file name only in this demo)."
+              >
                 <input
                   type="file"
                   onChange={(e) =>
-                    setSkillsState((s) => ({ ...s, documentName: e.target.files?.[0]?.name || "" }))
+                    setSkillsState((s) => ({
+                      ...s,
+                      documentName: e.target.files?.[0]?.name || "",
+                    }))
                   }
                   className="block w-full text-sm text-ink-500 file:mr-4 file:rounded-lg file:border-0 file:bg-navy-900 file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-paper-50 hover:file:bg-navy-800"
                 />
                 {skillsState.documentName && (
-                  <p className="mt-1.5 text-xs text-teal-600">Attached: {skillsState.documentName}</p>
+                  <p className="mt-1.5 text-xs text-teal-600">
+                    Attached: {skillsState.documentName}
+                  </p>
                 )}
               </Field>
             </div>
           ) : (
-            <Field label="Skills you'd like to learn" hint="Separate multiple skills with commas.">
+            <Field
+              label="Skills you'd like to learn"
+              hint="Separate multiple skills with commas."
+            >
               <Textarea
                 rows={2}
                 placeholder="e.g. Web Development, Graphic Design"
                 value={skillsState.skillsWanted}
-                onChange={(e) => setSkillsState((s) => ({ ...s, skillsWanted: e.target.value }))}
+                onChange={(e) =>
+                  setSkillsState((s) => ({
+                    ...s,
+                    skillsWanted: e.target.value,
+                  }))
+                }
               />
             </Field>
           )}
 
-          <Button type="button" size="sm" className="mt-4" loading={saving} onClick={onSkillsSave}>
+          <Button
+            type="button"
+            size="sm"
+            className="mt-4"
+            loading={saving}
+            onClick={onSkillsSave}
+          >
             Save skills information
           </Button>
         </Card>
@@ -250,7 +327,9 @@ export default function TraineeDashboard() {
         <Card className="lg:col-span-3">
           <div className="mb-4 flex items-center gap-2">
             <Briefcase size={16} className="text-navy-700" />
-            <p className="font-display text-sm font-semibold text-ink-900">Recommended jobs</p>
+            <p className="font-display text-sm font-semibold text-ink-900">
+              Recommended jobs
+            </p>
           </div>
 
           {user.status !== "certified" ? (
@@ -270,12 +349,27 @@ export default function TraineeDashboard() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {jobs.map((rec) => (
-                <div key={rec.id} className="rounded-2xl border border-paper-200 p-4">
-                  <p className="font-display text-sm font-semibold text-ink-900">{rec.job?.title}</p>
+                <div
+                  key={rec.id}
+                  className="rounded-2xl border border-paper-200 p-4"
+                >
+                  <p className="font-display text-sm font-semibold text-ink-900">
+                    {rec.job?.title}
+                  </p>
                   <p className="text-xs text-ink-500">
                     {rec.job?.company} · {rec.job?.location}
                   </p>
-                  <p className="mt-2 text-sm text-ink-700">{rec.job?.description}</p>
+                  <p className="mt-2 text-sm text-ink-700">
+                    {rec.job?.description}
+                  </p>
+
+                  <p className="mt-2 text-sm text-ink-700">{rec.job?.link}</p>
+
+                  <p>
+                    Copy and paste link to any Browser, click "employed" if
+                    gotten a job
+                  </p>
+
                   <Button
                     size="sm"
                     variant={rec.applied ? "subtle" : "amber"}
@@ -283,7 +377,7 @@ export default function TraineeDashboard() {
                     disabled={rec.applied}
                     onClick={() => applyToJob(rec.id)}
                   >
-                    {rec.applied ? "Applied" : "Apply now"}
+                    {rec.applied ? "Employed" : "Employed"}
                   </Button>
                 </div>
               ))}

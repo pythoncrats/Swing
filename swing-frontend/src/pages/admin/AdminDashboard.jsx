@@ -9,14 +9,21 @@ import {
   Briefcase,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell";
-import { Card, SectionHeading, StatusBadge, EmptyState } from "../../components/ui/Surfaces";
+import {
+  Card,
+  SectionHeading,
+  StatusBadge,
+  EmptyState,
+} from "../../components/ui/Surfaces";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
 import { Field, TextInput, Textarea, Select } from "../../components/ui/Field";
 import { useAuth } from "../../context/AuthContext";
 import * as api from "../../lib/mockApi";
 
-const NAV = [{ to: "/admin", label: "Overview", icon: LayoutDashboard, end: true }];
+const NAV = [
+  { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
+];
 
 const TABS = [
   { key: "pending", label: "Pending review", icon: Clock },
@@ -43,7 +50,11 @@ export default function AdminDashboard() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [t, tr, j] = await Promise.all([api.getAllTrainees(), api.getAllTrainers(), api.getJobs()]);
+    const [t, tr, j] = await Promise.all([
+      api.getAllTrainees(),
+      api.getAllTrainers(),
+      api.getJobs(),
+    ]);
     setTrainees(t);
     setTrainers(tr);
     setJobs(j);
@@ -54,10 +65,22 @@ export default function AdminDashboard() {
     loadAll();
   }, []);
 
-  const pending = useMemo(() => trainees.filter((t) => t.status === "pending"), [trainees]);
-  const assigned = useMemo(() => trainees.filter((t) => t.status === "in_training"), [trainees]);
-  const rejected = useMemo(() => trainees.filter((t) => t.status === "rejected"), [trainees]);
-  const certified = useMemo(() => trainees.filter((t) => t.status === "certified"), [trainees]);
+  const pending = useMemo(
+    () => trainees.filter((t) => t.status === "pending"),
+    [trainees],
+  );
+  const assigned = useMemo(
+    () => trainees.filter((t) => t.status === "in_training"),
+    [trainees],
+  );
+  const rejected = useMemo(
+    () => trainees.filter((t) => t.status === "rejected"),
+    [trainees],
+  );
+  const certified = useMemo(
+    () => trainees.filter((t) => t.status === "certified"),
+    [trainees],
+  );
 
   const trainerName = (id) => trainers.find((t) => t.id === id)?.name || "—";
 
@@ -75,7 +98,9 @@ export default function AdminDashboard() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.key ? "bg-navy-900 text-paper-50" : "bg-paper-100 text-ink-700 hover:bg-paper-200"
+              tab === t.key
+                ? "bg-navy-900 text-paper-50"
+                : "bg-paper-100 text-ink-700 hover:bg-paper-200"
             }`}
           >
             <t.icon size={14} />
@@ -99,15 +124,25 @@ export default function AdminDashboard() {
                 Awaiting review ({pending.length})
               </p>
               {pending.length === 0 ? (
-                <EmptyState icon={Clock} title="Nothing to review" description="New sign-ups will show up here." />
+                <EmptyState
+                  icon={Clock}
+                  title="Nothing to review"
+                  description="New sign-ups will show up here."
+                />
               ) : (
                 <div className="divide-y divide-paper-100">
                   {pending.map((t) => (
-                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3.5"
+                    >
                       <div>
-                        <p className="text-sm font-medium text-ink-900">{t.name}</p>
+                        <p className="text-sm font-medium text-ink-900">
+                          {t.name}
+                        </p>
                         <p className="text-xs text-ink-500">
-                          {t.email} · {t.phone} · {t.location || "No location given"}
+                          {t.email} · {t.phone} ·{" "}
+                          {t.location || "No location given"}
                         </p>
                         <p className="mt-1 text-xs text-ink-500">
                           {t.hasSkills
@@ -116,7 +151,11 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => setRejectTarget(t)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setRejectTarget(t)}
+                        >
                           Reject
                         </Button>
                         <Button size="sm" onClick={() => setAssignTarget(t)}>
@@ -140,13 +179,21 @@ export default function AdminDashboard() {
               ) : (
                 <div className="divide-y divide-paper-100">
                   {assigned.map((t) => (
-                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3.5"
+                    >
                       <div>
-                        <p className="text-sm font-medium text-ink-900">{t.name}</p>
+                        <p className="text-sm font-medium text-ink-900">
+                          {t.name}
+                        </p>
                         <p className="text-xs text-ink-500">{t.email}</p>
                       </div>
                       <p className="text-sm text-ink-700">
-                        Trainer: <span className="font-medium">{trainerName(t.assignedTrainerId)}</span>
+                        Trainer:{" "}
+                        <span className="font-medium">
+                          {trainerName(t.assignedTrainerId)}
+                        </span>
                       </p>
                     </div>
                   ))}
@@ -167,7 +214,9 @@ export default function AdminDashboard() {
                   {rejected.map((t) => (
                     <div key={t.id} className="py-3.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-ink-900">{t.name}</p>
+                        <p className="text-sm font-medium text-ink-900">
+                          {t.name}
+                        </p>
                         <StatusBadge status="rejected" />
                       </div>
                       <p className="text-xs text-ink-500">{t.email}</p>
@@ -191,17 +240,29 @@ export default function AdminDashboard() {
               ) : (
                 <div className="divide-y divide-paper-100">
                   {certified.map((t) => (
-                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center justify-between gap-3 py-3.5"
+                    >
                       <div>
-                        <p className="text-sm font-medium text-ink-900">{t.name}</p>
+                        <p className="text-sm font-medium text-ink-900">
+                          {t.name}
+                        </p>
                         <p className="text-xs text-ink-500">
-                          {t.email} · trained by {trainerName(t.assignedTrainerId)}
+                          {t.email} · trained by{" "}
+                          {trainerName(t.assignedTrainerId)}
                         </p>
                         {t.skillsHave?.length > 0 && (
-                          <p className="mt-1 text-xs text-ink-500">Skills: {t.skillsHave.join(", ")}</p>
+                          <p className="mt-1 text-xs text-ink-500">
+                            Skills: {t.skillsHave.join(", ")}
+                          </p>
                         )}
                       </div>
-                      <Button size="sm" variant="amber" onClick={() => setRecommendTarget(t)}>
+                      <Button
+                        size="sm"
+                        variant="amber"
+                        onClick={() => setRecommendTarget(t)}
+                      >
                         Recommend a job
                       </Button>
                     </div>
@@ -214,20 +275,31 @@ export default function AdminDashboard() {
           {tab === "trainers" && (
             <div className="grid gap-4 sm:grid-cols-2">
               {trainers.map((t) => {
-                const handled = trainees.filter((tr) => tr.assignedTrainerId === t.id);
+                const handled = trainees.filter(
+                  (tr) => tr.assignedTrainerId === t.id,
+                );
                 return (
                   <Card key={t.id}>
-                    <p className="font-display text-sm font-semibold text-ink-900">{t.name}</p>
+                    <p className="font-display text-sm font-semibold text-ink-900">
+                      {t.name}
+                    </p>
                     <p className="text-xs text-ink-500">{t.email}</p>
-                    <p className="mt-2 text-sm text-ink-700 line-clamp-2">{t.bio || "No bio provided yet."}</p>
+                    <p className="mt-2 text-sm text-ink-700 line-clamp-2">
+                      {t.bio || "No bio provided yet."}
+                    </p>
                     <p className="mt-2 text-xs text-ink-500">
-                      Skills: {t.skills?.length ? t.skills.join(", ") : "Not listed"}
+                      Skills:{" "}
+                      {t.skills?.length ? t.skills.join(", ") : "Not listed"}
                     </p>
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-xs font-medium text-navy-900">
                         {handled.length} trainee(s) handled
                       </span>
-                      <Button size="sm" variant="ghost" onClick={() => setTrainerProfile(t)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setTrainerProfile(t)}
+                      >
                         View profile
                       </Button>
                     </div>
@@ -249,15 +321,24 @@ export default function AdminDashboard() {
               </div>
               <div className="divide-y divide-paper-100">
                 {jobs.map((j) => (
-                  <div key={j.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+                  <div
+                    key={j.id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3.5"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-ink-900">{j.title}</p>
+                      <p className="text-sm font-medium text-ink-900">
+                        {j.title}
+                      </p>
                       <p className="text-xs text-ink-500">
                         {j.company} · {j.location}
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => setJobModal({ mode: "edit", job: j })}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setJobModal({ mode: "edit", job: j })}
+                      >
                         Edit
                       </Button>
                       <Button
@@ -279,15 +360,35 @@ export default function AdminDashboard() {
         </>
       )}
 
-      <AssignModal target={assignTarget} trainers={trainers} onClose={() => setAssignTarget(null)} onDone={loadAll} />
-      <RejectModal target={rejectTarget} onClose={() => setRejectTarget(null)} onDone={loadAll} />
-      <RecommendModal target={recommendTarget} jobs={jobs} onClose={() => setRecommendTarget(null)} onDone={loadAll} />
+      <AssignModal
+        target={assignTarget}
+        trainers={trainers}
+        onClose={() => setAssignTarget(null)}
+        onDone={loadAll}
+      />
+      <RejectModal
+        target={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onDone={loadAll}
+      />
+      <RecommendModal
+        target={recommendTarget}
+        jobs={jobs}
+        onClose={() => setRecommendTarget(null)}
+        onDone={loadAll}
+      />
       <TrainerProfileModal
         trainer={trainerProfile}
-        trainees={trainees.filter((tr) => tr.assignedTrainerId === trainerProfile?.id)}
+        trainees={trainees.filter(
+          (tr) => tr.assignedTrainerId === trainerProfile?.id,
+        )}
         onClose={() => setTrainerProfile(null)}
       />
-      <JobModal state={jobModal} onClose={() => setJobModal(null)} onDone={loadAll} />
+      <JobModal
+        state={jobModal}
+        onClose={() => setJobModal(null)}
+        onDone={loadAll}
+      />
     </AppShell>
   );
 }
@@ -312,9 +413,16 @@ function AssignModal({ target, trainers, onClose, onDone }) {
   };
 
   return (
-    <Modal open={!!target} onClose={onClose} title={`Assign ${target.name} to a trainer`}>
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title={`Assign ${target.name} to a trainer`}
+    >
       <Field label="Trainer">
-        <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)}>
+        <Select
+          value={trainerId}
+          onChange={(e) => setTrainerId(e.target.value)}
+        >
           {trainers.map((t) => (
             <option key={t.id} value={t.id}>
               {t.name} — {t.skills?.[0] || "General"}
@@ -351,15 +459,32 @@ function RejectModal({ target, onClose, onDone }) {
   };
 
   return (
-    <Modal open={!!target} onClose={onClose} title={`Reject ${target.name}'s registration`}>
-      <Field label="Reason" hint="The trainee will see this note on their dashboard.">
-        <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Explain why this application isn't moving forward..." />
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title={`Reject ${target.name}'s registration`}
+    >
+      <Field
+        label="Reason"
+        hint="The trainee will see this note on their dashboard."
+      >
+        <Textarea
+          rows={3}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Explain why this application isn't moving forward..."
+        />
       </Field>
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="danger" loading={busy} disabled={!reason.trim()} onClick={submit}>
+        <Button
+          variant="danger"
+          loading={busy}
+          disabled={!reason.trim()}
+          onClick={submit}
+        >
           Confirm rejection
         </Button>
       </div>
@@ -395,9 +520,15 @@ function RecommendModal({ target, jobs, onClose, onDone }) {
   };
 
   return (
-    <Modal open={!!target} onClose={onClose} title={`Recommend a job to ${target.name}`}>
+    <Modal
+      open={!!target}
+      onClose={onClose}
+      title={`Recommend a job to ${target.name}`}
+    >
       {jobs.length === 0 ? (
-        <p className="text-sm text-ink-500">Add a job listing first, then come back to recommend it.</p>
+        <p className="text-sm text-ink-500">
+          Add a job listing first, then come back to recommend it.
+        </p>
       ) : (
         <>
           <Field label="Job opening">
@@ -427,10 +558,17 @@ function RecommendModal({ target, jobs, onClose, onDone }) {
 function TrainerProfileModal({ trainer, trainees, onClose }) {
   if (!trainer) return null;
   return (
-    <Modal open={!!trainer} onClose={onClose} title={trainer.name} width="max-w-lg">
+    <Modal
+      open={!!trainer}
+      onClose={onClose}
+      title={trainer.name}
+      width="max-w-lg"
+    >
       <p className="text-sm text-ink-500">{trainer.email}</p>
       <p className="text-sm text-ink-500">{trainer.phone}</p>
-      <p className="mt-3 text-sm text-ink-700">{trainer.bio || "No bio provided yet."}</p>
+      <p className="mt-3 text-sm text-ink-700">
+        {trainer.bio || "No bio provided yet."}
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-xs text-ink-500">Education</p>
@@ -438,7 +576,9 @@ function TrainerProfileModal({ trainer, trainees, onClose }) {
         </div>
         <div>
           <p className="text-xs text-ink-500">Skills</p>
-          <p className="font-medium text-ink-900">{trainer.skills?.join(", ") || "—"}</p>
+          <p className="font-medium text-ink-900">
+            {trainer.skills?.join(", ") || "—"}
+          </p>
         </div>
       </div>
       <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-ink-500">
@@ -449,7 +589,10 @@ function TrainerProfileModal({ trainer, trainees, onClose }) {
       ) : (
         <div className="space-y-2">
           {trainees.map((t) => (
-            <div key={t.id} className="flex items-center justify-between rounded-lg bg-paper-50 px-3 py-2">
+            <div
+              key={t.id}
+              className="flex items-center justify-between rounded-lg bg-paper-50 px-3 py-2"
+            >
               <span className="text-sm text-ink-900">{t.name}</span>
               <StatusBadge status={t.status} />
             </div>
@@ -461,7 +604,12 @@ function TrainerProfileModal({ trainer, trainees, onClose }) {
 }
 
 function JobModal({ state, onClose, onDone }) {
-  const [form, setForm] = useState({ title: "", company: "", location: "", description: "" });
+  const [form, setForm] = useState({
+    title: "",
+    company: "",
+    location: "",
+    description: "",
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -482,22 +630,47 @@ function JobModal({ state, onClose, onDone }) {
   };
 
   return (
-    <Modal open={!!state} onClose={onClose} title={state.mode === "add" ? "Add a job listing" : "Edit job listing"}>
+    <Modal
+      open={!!state}
+      onClose={onClose}
+      title={state.mode === "add" ? "Add a job listing" : "Edit job listing"}
+    >
       <div className="space-y-4">
         <Field label="Job title" required>
-          <TextInput value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+          <TextInput
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          />
         </Field>
         <Field label="Company / Organisation" required>
-          <TextInput value={form.company} onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} />
+          <TextInput
+            value={form.company}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, company: e.target.value }))
+            }
+          />
+        </Field>
+        <Field label="Job Application Link" required>
+          <TextInput
+            value={form.link}
+            onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+          />
         </Field>
         <Field label="Location">
-          <TextInput value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
+          <TextInput
+            value={form.location}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, location: e.target.value }))
+            }
+          />
         </Field>
         <Field label="Description">
           <Textarea
             rows={3}
             value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
           />
         </Field>
       </div>
