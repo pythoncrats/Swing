@@ -39,11 +39,11 @@ CREATE TABLE IF NOT EXISTS users (
   skills_of_interest    JSON         DEFAULT NULL,         -- used when has_skills = FALSE
   training_status       ENUM('not_started', 'in_progress', 'certified') DEFAULT 'not_started',
   registration_status   ENUM('pending', 'assigned', 'rejected') DEFAULT 'pending',
-  rejection_reason      TEXT         DEFAULT '',
+  rejection_reason      TEXT         DEFAULT NULL,
   assigned_trainer_id   INT          DEFAULT NULL,
 
   -- ===== Trainer-only fields =====
-  bio                   TEXT         DEFAULT '',
+  bio                   TEXT         DEFAULT NULL,
   trainer_skills        JSON         DEFAULT NULL,
   education_status      VARCHAR(255) DEFAULT '',
 
